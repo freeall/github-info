@@ -1,6 +1,6 @@
 {
   "name": "github-info",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "List information about a github repository",
   "dependencies": {
     "github-with-auth": "^1.0.1",
