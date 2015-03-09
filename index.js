@@ -13,13 +13,21 @@ var user = process.argv[2].split('/')[0];
 var repo = process.argv[2].split('/')[1];
 
 gh(['repo'], function(err, github) {
-	info(github, function() {
+	info(github, function(err) {
+		if (err) throw err;
+
 		console.log();
-		openPullRequests(github, function() {
+		openPullRequests(github, function(err) {
+			if (err) throw err;
+
 			console.log();
-			closedPullRequests(github, function() {
+			closedPullRequests(github, function(err) {
+				if (err) throw err;
+
 				console.log();
-				tags(github, function() { });
+				tags(github, function(err) {
+					if (err) throw err;
+				});
 			});
 		});
 	});
@@ -30,7 +38,7 @@ var info = function(github, callback) {
 		user: user,
 		repo: repo
 	}, function(err, repo) {
-		if (err) throw err;
+		if (err) return callback(err);
 
 		console.log('General information');
 		console.log('===================');
@@ -57,7 +65,7 @@ var tags = function(github, callback) {
 		user: user,
 		repo: repo
 	}, function(err, tags) {
-		if (err) throw err;
+		if (err) return callback(err);
 
 		printTop('Latest tags', tags, 5, function(tag) {
 			console.log(tag.name);
@@ -74,7 +82,7 @@ var openPullRequests = function(github, callback) {
 		sort: 'created',
 		direction: 'asc'
 	}, function(err, prs) {
-		if (err) throw err;
+		if (err) return callback(err);
 
 		printTop('Open pull requests', prs, 5, function(pr) {
 			console.log(pr.title + ' (Created ' + moment(pr.created_at).fromNow() + ')');
@@ -91,7 +99,7 @@ var closedPullRequests = function(github, callback) {
 		sort: 'created',
 		direction: 'desc'
 	}, function(err, prs) {
-		if (err) throw err;
+		if (err) return callback(err);
 
 		printTop('Closed pull requests', prs, 5, function(pr) {
 			console.log(pr.title + ' (Closed ' + moment(pr.closed_at).fromNow() + ')');
