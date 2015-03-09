@@ -51,10 +51,9 @@ var info = function(github, callback) {
 	});
 };
 var printTop = function(type, arr, count, fn) {
-	if (arr.length > count) type += ' ['+count+'/' + arr.length + ']';
-
 	if (!arr.length) return console.log('This repository has no ' + type.toLowerCase());
 
+	type = 'Top ' + count + ' ' + type.toLowerCase();
 	console.log(type);
 	console.log(Array(type.length+1).join('='));
 
@@ -67,7 +66,7 @@ var tags = function(github, callback) {
 	}, function(err, tags) {
 		if (err) return callback(err);
 
-		printTop('Latest tags', tags, 5, function(tag) {
+		printTop('Releases/tags', tags, 5, function(tag) {
 			console.log(tag.name);
 		});
 
@@ -85,7 +84,7 @@ var openPullRequests = function(github, callback) {
 		if (err) return callback(err);
 
 		printTop('Open pull requests', prs, 5, function(pr) {
-			console.log(pr.title + ' (Created ' + moment(pr.created_at).fromNow() + ')');
+			console.log('#' + pr.number + ' ' + pr.title + ' (Created ' + moment(pr.created_at).fromNow() + ')');
 		});
 
 		callback();
@@ -102,7 +101,7 @@ var closedPullRequests = function(github, callback) {
 		if (err) return callback(err);
 
 		printTop('Closed pull requests', prs, 5, function(pr) {
-			console.log(pr.title + ' (Closed ' + moment(pr.closed_at).fromNow() + ')');
+			console.log('#' + pr.number + ' ' + pr.title + ' (Closed ' + moment(pr.closed_at).fromNow() + ')');
 		});
 
 		callback();
