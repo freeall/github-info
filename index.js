@@ -42,9 +42,10 @@ var info = function(github, callback) {
 
 		console.log('General information');
 		console.log('===================');
-		console.log('★  ' + repo.stargazers_count + '  👀  ' + repo.watchers_count + '  🍴  ' + repo.forks);
-		console.log(repo.full_name);
-		console.log('Open issues: ' + repo.open_issues_count);
+		console.log('★  ' + repo.stargazers_count);
+		console.log('👀  ' + repo.watchers_count);
+		console.log('🍴  ' + repo.forks);
+		console.log(repo.open_issues_count + ' open issues');
 		console.log('Is a '+(repo.private ? 'private' : 'public')+ ' repository');
 
 		callback();
@@ -53,7 +54,7 @@ var info = function(github, callback) {
 var printTop = function(type, arr, count, fn) {
 	if (!arr.length) return console.log('This repository has no ' + type.toLowerCase());
 
-	type = 'Top ' + count + ' ' + type.toLowerCase();
+	type = (arr.length > count ? 'Top ' : '') + Math.min(count, arr.length) + ' ' + type.toLowerCase();
 	console.log(type);
 	console.log(Array(type.length+1).join('='));
 
