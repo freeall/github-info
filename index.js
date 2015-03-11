@@ -1,110 +1,77 @@
 #!/usr/bin/env node
 
-var gh = require('github-with-auth');
+var gh = require('../github-with-auth');
 var moment = require('moment');
+var minimist = require('minimist');
+var Repository = require('./repository');
 
-if (process.argv.length !== 3 || process.argv[2].indexOf('/') === -1) {
-	console.log('Usage:   repo-info user/repository.');
-	console.log('Example: repo-info freeall/repo-info');
-	process.exit(1);
-}
-
-var user = process.argv[2].split('/')[0];
-var repo = process.argv[2].split('/')[1];
-
-gh(['repo'], function(err, github) {
-	info(github, function(err) {
+var showRepo = function(github, user, repo) {
+	var repository = Repository(github, user, repo);
+	repository.info(function(err) {
 		if (err) throw err;
 
 		console.log();
-		openPullRequests(github, function(err) {
+		repository.openPullRequests(function(err) {
 			if (err) throw err;
 
 			console.log();
-			closedPullRequests(github, function(err) {
+			repository.closedPullRequests(function(err) {
 				if (err) throw err;
 
 				console.log();
-				tags(github, function(err) {
+				repository.tags(function(err) {
 					if (err) throw err;
 				});
 			});
 		});
 	});
+};
+var showUser = function(github, user) {
+	github.search.issues({
+		q: 'user:'+user+' is:pr is:open',
+		per_page: 100
+	}, function(err, issues) {
+		if (err) throw err;
+		console.log('Showing '+(issues.items.length > 100 ? 'top 100' : issues.items.length) + ' open pull requests for '+user);
+
+		issues.items = issues.items.map(function(issue) {
+			var url = issue.url.split('/');
+			return {
+				repo: url[4] + '/' + url[5],
+				number: issue.number,
+				title: issue.title
+			};
+		});
+		issues.items.sort(function(a,b) {
+			return a.number - b.number;
+		});
+		var repos = issues.items.reduce(function(res, issue) {
+			if (res.indexOf(issue.repo) === -1) return res.concat(issue.repo);
+			return res;
+		}, []);
+		repos.forEach(function(repo) {
+			var items = issues.items.filter(function(issue) {
+				return issue.repo === repo;
+			});
+
+			console.log(repo + ' (' + items.length + ')');
+			items.forEach(function(issue) {
+				console.log('   #'+issue.number + ' ' + issue.title);
+			});
+			console.log();
+		});
+	});
+};
+
+gh(['repo'], function(err, github) {
+	var argv = minimist(process.argv.splice(2));
+	var rest = argv._.length ? argv._[0] : '';
+
+	var user = rest.split('/')[0];
+	var repo = rest.split('/')[1];
+
+	if (user && repo) return showRepo(github, user, repo);
+	if (user) return showUser(github, user);
+
+	console.log('Usage: github-info username[/repository]');
 });
-
-var info = function(github, callback) {
-	github.repos.get({
-		user: user,
-		repo: repo
-	}, function(err, repo) {
-		if (err) return callback(err);
-
-		console.log('General information');
-		console.log('===================');
-		console.log('★  ' + repo.stargazers_count);
-		console.log('👀  ' + repo.watchers_count);
-		console.log('🍴  ' + repo.forks);
-		console.log(repo.open_issues_count + ' open issues');
-		console.log('Is a '+(repo.private ? 'private' : 'public')+ ' repository');
-
-		callback();
-	});
-};
-var printTop = function(type, arr, count, fn) {
-	if (!arr.length) return console.log('This repository has no ' + type.toLowerCase());
-
-	type = (arr.length > count ? 'Top ' : '') + Math.min(count, arr.length) + ' ' + type.toLowerCase();
-	console.log(type);
-	console.log(Array(type.length+1).join('='));
-
-	arr.splice(0, count).forEach(fn);
-};
-var tags = function(github, callback) {
-	github.repos.getTags({
-		user: user,
-		repo: repo
-	}, function(err, tags) {
-		if (err) return callback(err);
-
-		printTop('Releases/tags', tags, 5, function(tag) {
-			console.log(tag.name);
-		});
-
-		callback();
-	});
-};
-var openPullRequests = function(github, callback) {
-	github.pullRequests.getAll({
-		user: user,
-		repo: repo,
-		state: 'open',
-		sort: 'created',
-		direction: 'asc'
-	}, function(err, prs) {
-		if (err) return callback(err);
-
-		printTop('Open pull requests', prs, 5, function(pr) {
-			console.log('#' + pr.number + ' ' + pr.title + ' (Created ' + moment(pr.created_at).fromNow() + ')');
-		});
-
-		callback();
-	});
-};
-var closedPullRequests = function(github, callback) {
-	github.pullRequests.getAll({
-		user: user,
-		repo: repo,
-		state: 'closed',
-		sort: 'created',
-		direction: 'desc'
-	}, function(err, prs) {
-		if (err) return callback(err);
-
-		printTop('Closed pull requests', prs, 5, function(pr) {
-			console.log('#' + pr.number + ' ' + pr.title + ' (Closed ' + moment(pr.closed_at).fromNow() + ')');
-		});
-
-		callback();
-	});
-};
