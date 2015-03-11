@@ -1,9 +1,15 @@
 var moment = require('moment');
 
 var printTop = function(ordering, type, arr, count, fn) {
-	if (!arr.length) return console.log('This repository has no ' + type.toLowerCase());
+	if (!arr.length) return console.log('This repository has no ' + type.toLowerCase() + 's');
 
-	var header = ordering + ' ' + Math.min(count, arr.length) + ' ' + type.toLowerCase();
+	var header = '';
+	header += arr.length > 1 ? 'The ' : '';
+	header += Math.min(count, arr.length) + ' ';
+	header += arr.length > count ? ordering.toLowerCase() + ' ' : '';
+	header += type.toLowerCase();
+	header += arr.length > 1 ? 's' : '';
+
 	console.log(header);
 	console.log(Array(header.length+1).join('='));
 
@@ -16,16 +22,17 @@ module.exports = function(github, user, repo) {
 			github.repos.get({
 				user: user,
 				repo: repo
-			}, function(err, repo) {
+			}, function(err, repository) {
 				if (err) return callback(err);
 
 				console.log('General information');
 				console.log('===================');
-				console.log('★  ' + repo.stargazers_count);
-				console.log('👀  ' + repo.watchers_count);
-				console.log('🍴  ' + repo.forks);
-				console.log(repo.open_issues_count + ' open issues');
-				console.log('Is a '+(repo.private ? 'private' : 'public')+ ' repository');
+				console.log('★  ' + repository.stargazers_count);
+				console.log('👀  ' + repository.watchers_count);
+				console.log('🍴  ' + repository.forks);
+				console.log('https://github.com/'+user+'/'+repo);
+				console.log(repository.open_issues_count + ' open issue' + (repository.open_issues_count !== 1 ? 's' : ''));
+				console.log('Is a '+(repository.private ? 'private' : 'public')+ ' repository');
 
 				callback();
 			});
@@ -37,7 +44,7 @@ module.exports = function(github, user, repo) {
 			}, function(err, tags) {
 				if (err) return callback(err);
 
-				printTop('Newest', 'Releases/tags', tags, 5, function(tag) {
+				printTop('Newest', 'tag', tags, 5, function(tag) {
 					console.log(tag.name);
 				});
 
@@ -54,7 +61,7 @@ module.exports = function(github, user, repo) {
 			}, function(err, prs) {
 				if (err) return callback(err);
 
-				printTop('Oldest', 'Open pull requests', prs, 5, function(pr) {
+				printTop('Oldest', 'Open pull request', prs, 5, function(pr) {
 					console.log('#' + pr.number + ' ' + pr.title + ' (Created ' + moment(pr.created_at).fromNow() + ')');
 				});
 
@@ -71,7 +78,7 @@ module.exports = function(github, user, repo) {
 			}, function(err, prs) {
 				if (err) return callback(err);
 
-				printTop('Newest', 'Closed pull requests', prs, 5, function(pr) {
+				printTop('Newest', 'Closed pull request', prs, 5, function(pr) {
 					console.log('#' + pr.number + ' ' + pr.title + ' (Closed ' + moment(pr.closed_at).fromNow() + ')');
 				});
 
